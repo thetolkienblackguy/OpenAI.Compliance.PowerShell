@@ -32,11 +32,11 @@ Function Remove-OAIUserFile {
     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact="High")]
     [OutputType([System.Object])]
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [string]$UserId,
-        [Parameter(Mandatory=$true, Position=1)]
+        [Parameter(Mandatory=$true, Position=1, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [string]$FileId,
-        [Parameter(Mandatory=$false, Position=2)]
+        [Parameter(Mandatory=$false, Position=2, ValueFromPipelineByPropertyName=$true)]
         [string]$ConversationId
     
     )
@@ -50,35 +50,39 @@ Function Remove-OAIUserFile {
         $user_manager = [OAIUser]::new($script:client)
 
     } Process {
-        Write-Debug "Deleting user file for UserId: $userId, FileId: $fileId"
-        Try {
-            If ($PSCmdlet.ShouldProcess("Delete user file $fileId for user $userId", "Remove-OAIUserFile", "Delete user file")) {
+        ForEach ($user in $userId) {
+            ForEach ($file in $fileId) {
+                Write-Debug "Deleting user file for UserId: $user, FileId: $file"
                 Try {
-                    If ($conversationId) {
-                        $response = $user_manager.DeleteUserFile($userId, $fileId, $conversationId)
-                    
+                    If ($PSCmdlet.ShouldProcess("Delete user file $file for user $user", "Remove-OAIUserFile", "Delete user file")) {
+                        Try {
+                            If ($conversationId) {
+                                $response = $user_manager.DeleteUserFile($user, $file, $conversationId)
+                            
+                            } Else {
+                                $response = $user_manager.DeleteUserFile($user, $file, $null)
+                            
+                            }
+                            Write-Debug "File deleted successfully"
+                            $response
+                        
+                        } Catch {
+                            Write-Error "Error deleting user file: $($_.Exception.Message)" -ErrorAction Stop
+                        
+                        }
                     } Else {
-                        $response = $user_manager.DeleteUserFile($userId, $fileId, $null)
+                        Write-Debug "Skipping user file deletion due to ShouldProcess"
                     
                     }
-                    Write-Debug "File deleted successfully"
-                
                 } Catch {
                     Write-Error "Error deleting user file: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Else {
-                Write-Debug "Skipping user file deletion due to ShouldProcess"
-            
             }
-        } Catch {
-            Write-Error "Error deleting user file: $($_.Exception.Message)" -ErrorAction Stop
-        
         }
 
     } End {
         Write-Debug "Successfully processed user file deletion"
-        $response
     
     }
 }
