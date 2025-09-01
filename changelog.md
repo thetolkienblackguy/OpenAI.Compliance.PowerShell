@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Security
 
+[0.0.2] - 2025-08-31
+### Added
+
+Debug-OAIHeaders - Display client headers with masked API key for troubleshooting
+Debug-OAIRequest - Display last request details with masked API key for troubleshooting
+
+### Fixed
+
+Get-OAIConversation returning null: Fixed conversations endpoint requiring since_timestamp parameter by updating GetConversations() method to delegate to GetConversationsSince(0, $top)
+
 ## [0.0.1] - 2025-08-31
 
 ### Added
