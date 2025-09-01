@@ -64,6 +64,7 @@ Function Get-OAIConversation {
         Try {
             Switch ($PSCmdlet.ParameterSetName) {
                 "All" {
+                    Write-Warning "Retrieving all workspace conversations depending on the size of the workspace, this may take a while. Recommended to use the Top parameter to limit the number of conversations retrieved."
                     $response = $conversation_manager.GetConversations($null)
 
                 } "Top" {
@@ -72,6 +73,7 @@ Function Get-OAIConversation {
                 } "Since" {
                     If ($sinceTop) {
                         $response = $conversation_manager.GetConversationsSince($sinceTimestamp, $sinceTop)
+                    
                     } Else {
                         $response = $conversation_manager.GetConversationsSince($sinceTimestamp, $null)
                     

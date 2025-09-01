@@ -9,7 +9,8 @@ class OAIConversation {
     #region Conversation Operations
     # Get all workspace conversations with optional top limit
     [object]GetConversations([int]$top = 0) {
-        return $this.Client.Paginate(@("conversations"), @{}, $top)
+        return $this.GetConversationsSince(0, $top)
+    
     }
 
     # Get conversations since a specific timestamp with optional top limit
