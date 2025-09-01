@@ -101,7 +101,10 @@ class OAIComplianceRequestClient {
         $endpoint = "$($this.BaseUri)/$(($segments -replace '(^/+|/+$)', '') -join "/")"
   
         If ($queryParams) {
-            $endpoint = "$($endpoint)?$(($queryParams.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join "&")"
+            $endpoint = "$($endpoint)?$(($queryParams.GetEnumerator() | ForEach-Object { 
+                "$($_.Key)=$([System.Web.HttpUtility]::UrlEncode($_.Value.ToString()))" 
+            
+            }) -join "&")"
         
         }
         return $endpoint
