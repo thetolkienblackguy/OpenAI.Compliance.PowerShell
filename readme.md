@@ -2,7 +2,7 @@
 
 [![PowerShell Gallery](https://img.shields.io/badge/PowerShell-5.1+-blue.svg)](https://docs.microsoft.com/en-us/powershell/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.0.1-green.svg)]()
 
 > **⚠️ DISCLAIMER:** This is an unofficial, third-party PowerShell module. It is not developed, maintained, endorsed, or supported by OpenAI. This project is independent and community-driven.
 
