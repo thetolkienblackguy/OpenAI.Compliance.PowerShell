@@ -537,7 +537,6 @@ Remove-OAIConversation -ConversationId "conv-123" -Debug
 ### Important Notes
 
 - **Deleted data is not recoverable** - All delete operations are permanent
-- **Audit logging** - All API requests are logged by OpenAI for security and compliance
 - **Retention policies** - Deleted items are removed from all internal search and retrieval indexes
 
 ### Compliance Use Cases
