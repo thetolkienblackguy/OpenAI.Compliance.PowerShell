@@ -5,6 +5,8 @@ class OAIComplianceRequestClient {
     hidden [string]$APIKey
     hidden [hashtable]$Headers
     hidden [hashtable]$RequestDetails
+    hidden [int]$RequestCount = 0
+    hidden [datetime]$RateLimitStartTime = [datetime]::Now
 
     OAIComplianceRequestClient([string]$workspaceId, [string]$apiKey) {
         $this.WorkspaceId = $workspaceId
@@ -60,6 +62,8 @@ class OAIComplianceRequestClient {
         $total_retrieved = 0  
         Do {
             $response = $this.InvokeGetRequest($segments, $params)
+            # Handle rate limit
+            $this.HandleRateLimit()
             
             If (!$response) {
                 Write-Error "Failed to retrieve data during pagination"
@@ -93,6 +97,25 @@ class OAIComplianceRequestClient {
         return $this.Results
     }
 
+    # Rate limiting method
+    hidden [void]HandleRateLimit() {
+        $this.RequestCount++
+        
+        # Check every 90 requests to stay under 100/minute limit
+        If ($this.RequestCount % 90 -eq 0) {
+            $elapsed = ([datetime]::Now - $this.RateLimitStartTime).TotalSeconds
+            If ($elapsed -lt 60) {
+                $sleep_time = 60 - $elapsed + 5  # Add 5 second buffer
+                Write-Warning "Approaching rate limit. Sleeping for $sleep_time seconds"
+                Start-Sleep -Seconds $sleep_time
+            
+            }
+            # Reset tracking
+            $this.RateLimitStartTime = [datetime]::Now
+            $this.RequestCount = 0
+        
+        }
+    }
     #endregion
 
     #region URI Building
