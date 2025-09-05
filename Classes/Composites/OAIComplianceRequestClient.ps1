@@ -5,6 +5,7 @@ class OAIComplianceRequestClient {
     hidden [string]$APIKey
     hidden [hashtable]$Headers
     hidden [hashtable]$RequestDetails
+    [int]$MaxRetries = 3
 
     OAIComplianceRequestClient([string]$workspaceId, [string]$apiKey) {
         $this.WorkspaceId = $workspaceId
@@ -13,14 +14,13 @@ class OAIComplianceRequestClient {
         $this.Headers = @{}
         $this.Headers["Authorization"] = "Bearer $($this.APIKey)"
         $this.Headers["Content-Type"] = "application/json"
+    
     }
 
     #region Request Methods
     # Invoke a request to the OpenAI Compliance API
-    hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {
-        $max_retries = 3
-        
-        For ($attempt = 1; $attempt -le $max_retries; $attempt++) {
+    hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {        
+        For ($attempt = 1; $attempt -le $this.MaxRetries; $attempt++) {
             # Invoke-RestMethod parameters
             $invoke_rest_params = @{}
             $invoke_rest_params["Method"] = $method
@@ -45,15 +45,12 @@ class OAIComplianceRequestClient {
                 
                 # Log the error for non-retryable errors or final attempt
                 Write-Error "Failed to invoke request: $($_.Exception.Message)"
-                If ($attempt -eq $max_retries) {
+                If ($attempt -eq $this.MaxRetries) {
                     return $null
                 
                 }
-            
             }
-        
-        }
-        
+        }  
         return $null
     }
 
@@ -95,8 +92,7 @@ class OAIComplianceRequestClient {
                 If ($top -gt 0 -and $total_retrieved -ge $top) {
                     break
                 
-                }
-            
+                }         
             }
             
             # Setup next page if more data exists
@@ -119,8 +115,7 @@ class OAIComplianceRequestClient {
             } ElseIf ($data.Count -gt $remaining_needed) {
                 return $data[0..($remaining_needed - 1)]
             
-            }
-        
+            }       
         }
         return $data
     }
@@ -168,8 +163,7 @@ class OAIComplianceRequestClient {
             If ($response -and $response.StatusCode) {
                 return ($response.StatusCode -eq 429)
             
-            }
-        
+            }    
         }
         return $false
     }
@@ -188,7 +182,7 @@ class OAIComplianceRequestClient {
             If ($response -and $response.Headers) {
                 return $response.Headers["Retry-After"]
             
-            }  
+            }       
         }
         return $null
     }
