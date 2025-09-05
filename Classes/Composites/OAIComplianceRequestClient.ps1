@@ -5,7 +5,6 @@ class OAIComplianceRequestClient {
     hidden [string]$APIKey
     hidden [hashtable]$Headers
     hidden [hashtable]$RequestDetails
-    [int]$MaxRetries = 3
 
     OAIComplianceRequestClient([string]$workspaceId, [string]$apiKey) {
         $this.WorkspaceId = $workspaceId
@@ -18,8 +17,10 @@ class OAIComplianceRequestClient {
 
     #region Request Methods
     # Invoke a request to the OpenAI Compliance API
-    hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {        
-        For ($attempt = 1; $attempt -le $this.MaxRetries; $attempt++) {
+    hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {
+        $max_retries = 3
+        
+        For ($attempt = 1; $attempt -le $max_retries; $attempt++) {
             # Invoke-RestMethod parameters
             $invoke_rest_params = @{}
             $invoke_rest_params["Method"] = $method
@@ -44,12 +45,15 @@ class OAIComplianceRequestClient {
                 
                 # Log the error for non-retryable errors or final attempt
                 Write-Error "Failed to invoke request: $($_.Exception.Message)"
-                If ($attempt -eq $this.MaxRetries) {
+                If ($attempt -eq $max_retries) {
                     return $null
                 
                 }
+            
             }
-        }  
+        
+        }
+        
         return $null
     }
 
@@ -91,7 +95,8 @@ class OAIComplianceRequestClient {
                 If ($top -gt 0 -and $total_retrieved -ge $top) {
                     break
                 
-                }         
+                }
+            
             }
             
             # Setup next page if more data exists
@@ -104,6 +109,89 @@ class OAIComplianceRequestClient {
         return $this.Results
     }
 
+    # Get the items to add based on top limit
+    hidden [object[]]GetItemsToAdd([object[]]$data, [int]$top, [int]$total_retrieved) {
+        If ($top -gt 0) {
+            $remaining_needed = $top - $total_retrieved
+            If ($remaining_needed -le 0) {
+                return @()
+            
+            } ElseIf ($data.Count -gt $remaining_needed) {
+                return $data[0..($remaining_needed - 1)]
+            
+            }
+        
+        }
+        return $data
+    }
+
+    # Setup parameters for next page
+    hidden [void]SetupNextPage([hashtable]$params, [string]$lastId) {
+        # Remove since_timestamp to avoid parameter conflict
+        If ($params.ContainsKey("since_timestamp")) {
+            $params.Remove("since_timestamp")
+        
+        }
+        $params["after"] = $lastId
+    }
+
+    # Rate limiting method - reactive handling
+    hidden [bool]HandleRateLimit() {
+        $last_error = $Error[0]
+        
+        If ($this.IsRateLimitError($last_error)) {
+            $retry_after = $this.GetRetryAfterValue($last_error)
+            $sleep_time = If ($retry_after) { [int]$retry_after } Else { 60 }
+            
+            Write-Warning "Rate limit hit (429). Sleeping for $sleep_time seconds"
+            Start-Sleep -Seconds $sleep_time
+            
+            return $true
+        
+        }
+        
+        return $false
+    }
+
+    # Check if error is a rate limit error
+    hidden [bool]IsRateLimitError([object]$errorRecord) {
+        $exception_type = $errorRecord.Exception.GetType().FullName
+        
+        # PowerShell Core 6+ uses HttpResponseException
+        If ($exception_type -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
+            $status_code = $errorRecord.Exception.Response.StatusCode
+            return ($status_code -eq 429)
+        
+        # Windows PowerShell 5.1 uses WebException
+        } ElseIf ($errorRecord.Exception -is [System.Net.WebException]) {
+            $response = $errorRecord.Exception.Response
+            If ($response -and $response.StatusCode) {
+                return ($response.StatusCode -eq 429)
+            
+            }
+        
+        }
+        return $false
+    }
+
+    # Get retry after value from error response
+    hidden [object]GetRetryAfterValue([object]$errorRecord) {
+        $exception_type = $errorRecord.Exception.GetType().FullName
+        
+        # PowerShell Core 6+ uses HttpResponseException
+        If ($exception_type -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
+            return $errorRecord.Exception.Response.Headers["Retry-After"]
+        
+        # Windows PowerShell 5.1 uses WebException
+        } ElseIf ($errorRecord.Exception -is [System.Net.WebException]) {
+            $response = $errorRecord.Exception.Response
+            If ($response -and $response.Headers) {
+                return $response.Headers["Retry-After"]
+            
+            }  
+        }
+        return $null
+    }
     #endregion
 
     #region URI Building
@@ -121,78 +209,10 @@ class OAIComplianceRequestClient {
         return $endpoint
     
     }
-    
-    # Get the items to add based on top limit
-    hidden [object[]]GetItemsToAdd([object[]]$data, [int]$top, [int]$total_retrieved) {
-        If ($top -gt 0) {
-            $remaining_needed = $top - $total_retrieved
-            If ($remaining_needed -le 0) {
-                return @()
-            
-            } ElseIf ($data.Count -gt $remaining_needed) {
-                return $data[0..($remaining_needed - 1)]
-            
-            }
-        }
-        return $data
-    }
 
-    # Setup parameters for next page
-    hidden [void]SetupNextPage([hashtable]$params, [string]$lastId) {
-        # Remove since_timestamp to avoid parameter conflict
-        If ($params.ContainsKey("since_timestamp")) {
-            $params.Remove("since_timestamp")
-        
-        }
-        $params["after"] = $lastId
-    }
     #endregion
 
-    #region Exception handling
-    # Rate limiting method - reactive handling
-    hidden [bool]HandleRateLimit() {
-        $last_error = $Error[0]
-        
-        If ($this.IsRateLimitError($last_error)) {
-            $retry_after = $this.GetRetryAfterValue($last_error)
-            $sleep_time = If ($retry_after) { 
-                [int]$retry_after 
-            
-            } Else { 
-                60 
-            
-            }
-            
-            Write-Warning "Rate limit hit (429). Sleeping for $sleep_time seconds"
-            Start-Sleep -Seconds $sleep_time
-            
-            return $true
-        
-        }
-        
-        return $false
-    }
-
-    # Check if error is a rate limit error
-    hidden [bool]IsRateLimitError([object]$errorRecord) {
-        If ($errorRecord.Exception -is [Microsoft.PowerShell.Commands.HttpResponseException]) {
-            $status_code = $errorRecord.Exception.Response.StatusCode
-            return ($status_code -eq 429)
-        
-        }
-        return $false
-    }
-
-    # Get retry after value from error response
-    hidden [object]GetRetryAfterValue([object]$errorRecord) {
-        If ($errorRecord.Exception -is [Microsoft.PowerShell.Commands.HttpResponseException]) {
-            return $errorRecord.Exception.Response.Headers["Retry-After"]
-        
-        }
-        return $null
-    }
-
-    #region Debugging
+    #region Last Request
     # Get the last request
     [string]DebugRequest() {
         $masked_headers = $this.RequestDetails.Headers.Clone()
