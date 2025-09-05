@@ -1,6 +1,6 @@
 @{
     # Module metadata
-    ModuleVersion       = "0.0.2"
+    ModuleVersion       = "0.0.3"
     GUID                = "1a4496ad-a154-49a7-b1c0-961fa131483f"
     Author              = "Gabriel Delaney - gdelaney@phzconsulting.com | https://github.com/thetolkienblackguy"
     CompanyName         = "Phoenix Horizons LLC"
@@ -27,7 +27,7 @@
     PrivateData = @{
         PSData = @{
             Tags         = @("OpenAI", "ChatGPT", "Compliance", "PowerShell", "API", "REST")
-            ReleaseNotes = "v0.0.2 - Added debug functions and fixed an issue where Get-OAIConversation was returning null."
+            ReleaseNotes = "v0.0.3 - Updated OAIComplianceRequestClient's pagination logic and added more robust error and rate limit handling."
         }
     }
 }
