@@ -18,27 +18,43 @@ class OAIComplianceRequestClient {
     #region Request Methods
     # Invoke a request to the OpenAI Compliance API
     hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {
-        # Invoke-RestMethod parameters
-        $invoke_rest_params = @{}
-        $invoke_rest_params["Method"] = $method
-        $invoke_rest_params["Uri"] = $this.BuildComplianceUri($segments, $queryParams)
-        $invoke_rest_params["Headers"] = $this.Headers
-        If ($body) {
-            $invoke_rest_params["Body"] = $body
+        $max_retries = 3
         
-        }
-        # Invoke-RestMethod
-        Try {
-            $this.RequestDetails = $invoke_rest_params
-            $response = Invoke-RestMethod @invoke_rest_params
-            return $response
+        For ($attempt = 1; $attempt -le $max_retries; $attempt++) {
+            # Invoke-RestMethod parameters
+            $invoke_rest_params = @{}
+            $invoke_rest_params["Method"] = $method
+            $invoke_rest_params["Uri"] = $this.BuildComplianceUri($segments, $queryParams)
+            $invoke_rest_params["Headers"] = $this.Headers
+            If ($body) {
+                $invoke_rest_params["Body"] = $body
+            
+            }
+            # Invoke-RestMethod
+            Try {
+                $this.RequestDetails = $invoke_rest_params
+                $response = Invoke-RestMethod @invoke_rest_params
+                return $response
 
-        } Catch {
-            # Log the error
-            Write-Error "Failed to invoke request: $($_.Exception.Message)"
-            return $null
+            } Catch {
+                # Check if we should retry due to rate limiting
+                If ($this.HandleRateLimit()) {
+                    continue
+                
+                }
+                
+                # Log the error for non-retryable errors or final attempt
+                Write-Error "Failed to invoke request: $($_.Exception.Message)"
+                If ($attempt -eq $max_retries) {
+                    return $null
+                
+                }
+            
+            }
         
         }
+        
+        return $null
     }
 
     # Invoke a GET request to the OpenAI Compliance API
@@ -58,41 +74,124 @@ class OAIComplianceRequestClient {
         $this.Results = [system.collections.generic.list[pscustomobject]]::new()
         $params = $queryParams.Clone()
         $total_retrieved = 0  
+        
         Do {
             $response = $this.InvokeGetRequest($segments, $params)
             
             If (!$response) {
                 Write-Error "Failed to retrieve data during pagination"
+                break
             
             } ElseIf ($response.data) {
-                Foreach ($item in $response.data) {
+                $items_to_add = $this.GetItemsToAdd($response.data, $top, $total_retrieved)
+                
+                Foreach ($item in $items_to_add) {
                     $this.Results.Add($item)
                 
                 }
-                $total_retrieved += $response.data.Count
-            
-            }
-            
-            # Check if we've hit the top limit
-            If ($top -gt 0 -and $total_retrieved -ge $top) {
-                # Trim to exact top count
-                $this.Results = $this.Results[0..($top - 1)]
-                break
+                $total_retrieved += $items_to_add.Count
+                
+                # Check if we've reached the top limit
+                If ($top -gt 0 -and $total_retrieved -ge $top) {
+                    break
+                
+                }
             
             }
             
             # Setup next page if more data exists
-            If ($response.has_more -and $response.data.Count -gt 0) {
-                $lastItem = $response.data[-1]
-                # Use the ID of the last item for the 'after' parameter
-                $params["after"] = $lastItem.id
+            If ($response.has_more -and $response.last_id) {
+                $this.SetupNextPage($params, $response.last_id)
             
             }
-        } While ($response.has_more)
+        } While ($response.has_more -and $response.last_id)
 
         return $this.Results
     }
 
+    # Get the items to add based on top limit
+    hidden [object[]]GetItemsToAdd([object[]]$data, [int]$top, [int]$total_retrieved) {
+        If ($top -gt 0) {
+            $remaining_needed = $top - $total_retrieved
+            If ($remaining_needed -le 0) {
+                return @()
+            
+            } ElseIf ($data.Count -gt $remaining_needed) {
+                return $data[0..($remaining_needed - 1)]
+            
+            }
+        
+        }
+        return $data
+    }
+
+    # Setup parameters for next page
+    hidden [void]SetupNextPage([hashtable]$params, [string]$lastId) {
+        # Remove since_timestamp to avoid parameter conflict
+        If ($params.ContainsKey("since_timestamp")) {
+            $params.Remove("since_timestamp")
+        
+        }
+        $params["after"] = $lastId
+    }
+
+    # Rate limiting method - reactive handling
+    hidden [bool]HandleRateLimit() {
+        $last_error = $Error[0]
+        
+        If ($this.IsRateLimitError($last_error)) {
+            $retry_after = $this.GetRetryAfterValue($last_error)
+            $sleep_time = If ($retry_after) { [int]$retry_after } Else { 60 }
+            
+            Write-Warning "Rate limit hit (429). Sleeping for $sleep_time seconds"
+            Start-Sleep -Seconds $sleep_time
+            
+            return $true
+        
+        }
+        
+        return $false
+    }
+
+    # Check if error is a rate limit error
+    hidden [bool]IsRateLimitError([object]$errorRecord) {
+        $exception_type = $errorRecord.Exception.GetType().FullName
+        
+        # PowerShell Core 6+ uses HttpResponseException
+        If ($exception_type -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
+            $status_code = $errorRecord.Exception.Response.StatusCode
+            return ($status_code -eq 429)
+        
+        # Windows PowerShell 5.1 uses WebException
+        } ElseIf ($errorRecord.Exception -is [System.Net.WebException]) {
+            $response = $errorRecord.Exception.Response
+            If ($response -and $response.StatusCode) {
+                return ($response.StatusCode -eq 429)
+            
+            }
+        
+        }
+        return $false
+    }
+
+    # Get retry after value from error response
+    hidden [object]GetRetryAfterValue([object]$errorRecord) {
+        $exception_type = $errorRecord.Exception.GetType().FullName
+        
+        # PowerShell Core 6+ uses HttpResponseException
+        If ($exception_type -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
+            return $errorRecord.Exception.Response.Headers["Retry-After"]
+        
+        # Windows PowerShell 5.1 uses WebException
+        } ElseIf ($errorRecord.Exception -is [System.Net.WebException]) {
+            $response = $errorRecord.Exception.Response
+            If ($response -and $response.Headers) {
+                return $response.Headers["Retry-After"]
+            
+            }  
+        }
+        return $null
+    }
     #endregion
 
     #region URI Building
