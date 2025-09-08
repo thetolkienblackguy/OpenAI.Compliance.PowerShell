@@ -22,6 +22,16 @@ class OAIConversation {
     
     }
 
+    # Get conversations for a single user with optional top limit
+    [object]GetConversationsByUser([string]$userId, [int]$top = 0) {
+        $query_params = @{}
+        $query_params["since_timestamp"] = 0
+        $query_params["users"] = [System.Web.HttpUtility]::UrlEncode($userId)
+        
+        return $this.Client.Paginate(@("conversations"), $query_params, $top)
+    
+    }
+
     # Delete a specific conversation
     [object]DeleteConversation([string]$conversationId) {
         $segments = @("conversations", $conversationId)
