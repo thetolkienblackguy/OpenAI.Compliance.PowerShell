@@ -47,29 +47,17 @@ Function Remove-OAIUserRecording {
         ForEach ($user in $userId) {
             ForEach ($recording in $recordingId) {
                 Write-Debug "Deleting user recording for UserId: $user, RecordingId: $recording"
-                Try {
-                    If ($PSCmdlet.ShouldProcess("Delete recording $recording for user $user", "Remove-OAIUserRecording", "Delete user recording")) {
-                        Try {
-                            $response = $recording_manager.DeleteUserRecording($user, $recording)
-                            Write-Debug "User recording deleted successfully"
-                            $response
-                        
-                        } Catch {
-                            Write-Error "Error deleting user recording: $($_.Exception.Message)" -ErrorAction Stop
-                        
-                        }
-                    } Else {
-                        Write-Debug "Skipping user recording deletion due to ShouldProcess"
+                If ($PSCmdlet.ShouldProcess("Delete recording $recording for user $user", "Remove-OAIUserRecording", "Delete user recording")) {
+                    Try {
+                        $recording_manager.DeleteUserRecording($user, $recording)
+                        Write-Debug "User recording deleted successfully"
+                    
+                    } Catch {
+                        Write-Error "Error deleting user recording: $($_.Exception.Message)" -ErrorAction Stop
                     
                     }
-                } Catch {
-                    Write-Error "Error deleting user recording: $($_.Exception.Message)" -ErrorAction Stop
-                
                 }
             }
         }
-    } End {
-        Write-Debug "Successfully processed user recording deletion"
-    
     }
 }

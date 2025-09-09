@@ -38,10 +38,14 @@ Function Get-OAIGPT {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top,
-        [Parameter(Mandatory=$true, Position=0, ParameterSetName="ById")]
-        [string]$GPTId
+        [Parameter(
+            Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName="ById"
+            
+        )]
+        [Alias("Id")]
+        [string[]]$GPTId
     
     )
     Begin {
@@ -58,14 +62,16 @@ Function Get-OAIGPT {
         Try {
             Switch ($PSCmdlet.ParameterSetName) {
                 "All" {
-                    $response = $gpt_manager.GetGPTs($null)
+                    $gpt_manager.GetGPTs($null)
 
                 } "Top" {
-                    $response = $gpt_manager.GetGPTs($top)
+                    $gpt_manager.GetGPTs($top)
 
                 } "ById" {
-                    $response = $gpt_manager.GetGPT($gptId)
-
+                    ForEach ($id in $gptId) {
+                        $gpt_manager.GetGPT($id)
+                    
+                    }
                 }
             }
             Write-Debug "Response retrieved successfully"
@@ -74,9 +80,5 @@ Function Get-OAIGPT {
             Write-Error "Error retrieving workspace GPTs: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-    } End {
-        Write-Debug "Successfully retrieved workspace GPTs"
-        $response
-    
-    }
+    } 
 }

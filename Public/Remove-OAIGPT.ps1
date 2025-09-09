@@ -42,28 +42,16 @@ Function Remove-OAIGPT {
     } Process {
         ForEach ($id in $gptId) {
             Write-Debug "Deleting GPT: $id"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Delete GPT $id", "Remove-OAIGPT", "Delete GPT")) {
-                    Try {
-                        $response = $gpt_manager.DeleteGPT($id)
-                        Write-Debug "GPT deleted successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error deleting GPT: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping GPT deletion due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Delete GPT $id", "Remove-OAIGPT", "Delete GPT")) {
+                Try {
+                    $gpt_manager.DeleteGPT($id)
+                    Write-Debug "GPT deleted successfully"
+                
+                } Catch {
+                    Write-Error "Error deleting GPT: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error deleting GPT: $($_.Exception.Message)" -ErrorAction Stop
-            
             }
         }
-    } End {
-        Write-Debug "Successfully processed GPT deletion"
-    
-    }
+    } 
 }

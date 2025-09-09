@@ -34,7 +34,7 @@ Function Get-OAIMemory {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -50,25 +50,16 @@ Function Get-OAIMemory {
     } Process {
         Write-Debug "Retrieving workspace memories with parameter set: $($PSCmdlet.ParameterSetName)"
         Try {
-            Switch ($PSCmdlet.ParameterSetName) {
-                "All" {
-                    $response = $memory_manager.GetMemories($null)
-
-                } "Top" {
-                    $response = $memory_manager.GetMemories($top)
-
-                }
+            If (!$top) {
+                $top = 0
+                
             }
+            $memory_manager.GetMemories($top)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
             Write-Error "Error retrieving workspace memories: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved workspace memories"
-        $response
-    
-    }
+    } 
 }

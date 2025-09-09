@@ -41,12 +41,12 @@ Function Get-OAIConversation {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Since")]
         $SinceTimestamp,
         [Parameter(Mandatory=$false, Position=1, ParameterSetName="Since")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$SinceTop
     
     )
@@ -65,20 +65,19 @@ Function Get-OAIConversation {
             Switch ($PSCmdlet.ParameterSetName) {
                 "All" {
                     Write-Warning "Retrieving all workspace conversations depending on the size of the workspace, this may take a while. Recommended to use the Top parameter to limit the number of conversations retrieved."
-                    $response = $conversation_manager.GetConversations($null)
+                    $conversation_manager.GetConversations($null)
 
                 } "Top" {
-                    $response = $conversation_manager.GetConversations($top)
+                    $conversation_manager.GetConversations($top)
 
                 } "Since" {
                     If ($sinceTop) {
-                        $response = $conversation_manager.GetConversationsSince($sinceTimestamp, $sinceTop)
+                        $conversation_manager.GetConversationsSince($sinceTimestamp, $sinceTop)
                     
                     } Else {
-                        $response = $conversation_manager.GetConversationsSince($sinceTimestamp, $null)
+                        $conversation_manager.GetConversationsSince($sinceTimestamp, $null)
                     
                     }
-
                 }
             }
             Write-Debug "Response retrieved successfully"
@@ -87,10 +86,5 @@ Function Get-OAIConversation {
             Write-Error "Error retrieving workspace conversations: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved workspace conversations"
-        $response
-    
-    }
+    } 
 }

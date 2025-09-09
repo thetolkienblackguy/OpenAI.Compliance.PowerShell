@@ -41,9 +41,13 @@ Function Get-OAICodexTask {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top,
-        [Parameter(Mandatory=$true, Position=0, ParameterSetName="ById", ValueFromPipelineByPropertyName=$true)]
+        [Parameter(
+            Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName="ById"
+            
+        )]
+        [Alias("Id")]
         [string]$TaskId
     
     )
@@ -61,13 +65,13 @@ Function Get-OAICodexTask {
         Try {
             Switch ($PSCmdlet.ParameterSetName) {
                 "All" {
-                    $response = $codex_manager.GetCodexTasks($null)
+                    $codex_manager.GetCodexTasks($null)
 
                 } "Top" {
-                    $response = $codex_manager.GetCodexTasks($top)
+                    $codex_manager.GetCodexTasks($top)
 
                 } "ById" {
-                    $response = $codex_manager.GetCodexTask($taskId)
+                    $codex_manager.GetCodexTask($taskId)
 
                 }
             }
@@ -77,10 +81,5 @@ Function Get-OAICodexTask {
             Write-Error "Error retrieving codex tasks: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved codex tasks"
-        $response
-    
-    }
+    } 
 }

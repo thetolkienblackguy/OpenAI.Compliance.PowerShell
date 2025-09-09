@@ -23,7 +23,7 @@ Function Get-OAIGPTFileContent {
     [OutputType([System.Object])]
     param(
         [Parameter(Mandatory=$true, Position=0)]
-        [string]$FileId
+        [string[]]$FileId
     
     )
     Begin {
@@ -36,18 +36,15 @@ Function Get-OAIGPTFileContent {
         $gpt_manager = [OAIGPT]::new($script:client)
 
     } Process {
-        Write-Debug "Retrieving GPT file content for FileId: $fileId"
-        Try {
-            $response = $gpt_manager.GetGPTFileContent($fileId)
-            Write-Debug "Response retrieved successfully"
-                
-        } Catch {
-            Write-Error "Error retrieving GPT file content: $($_.Exception.Message)" -ErrorAction Stop
-        
+        ForEach ($id in $fileId) {
+            Write-Debug "Retrieving GPT file content for FileId: $id"
+            Try {
+                $gpt_manager.GetGPTFileContent($id)
+            
+            } Catch {
+                Write-Error "Error retrieving GPT file content: $($_.Exception.Message)" -ErrorAction Stop
+            
+            }
         }
-    } End {
-        Write-Debug "Successfully retrieved GPT file content"
-        $response
-    
-    }
+    } 
 }

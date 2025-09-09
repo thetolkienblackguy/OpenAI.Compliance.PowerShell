@@ -25,7 +25,8 @@ Function Get-OAICanvasContent {
     [CmdletBinding()]
     [OutputType([System.Object])]
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [Alias("Id")]
         [string]$UserId,
         [Parameter(Mandatory=$true, Position=1)]
         [string]$TextdocId
@@ -43,16 +44,12 @@ Function Get-OAICanvasContent {
     } Process {
         Write-Debug "Retrieving canvas content for UserId: $userId, TextdocId: $textdocId"
         Try {
-            $response = $canvas_manager.GetCanvasContent($userId, $textdocId)
+            $canvas_manager.GetCanvasContent($userId, $textdocId)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
             Write-Error "Error retrieving canvas content: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-    } End {
-        Write-Debug "Successfully retrieved canvas content"
-        $response
-    
-    }
+    } 
 }

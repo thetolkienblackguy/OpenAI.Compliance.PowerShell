@@ -32,13 +32,14 @@ Function Get-OAIUserConversation {
     [CmdletBinding(DefaultParameterSetName="All")]
     [OutputType([System.Object[]])]
     param(
-        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
-        [string]$UserId,
+        [Alias("Id")]
+        [string[]]$UserId,
         [Parameter(Mandatory=$true, Position=1, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=1, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -53,27 +54,21 @@ Function Get-OAIUserConversation {
 
     } Process {
         Write-Debug "Retrieving user conversations with parameter set: $($PSCmdlet.ParameterSetName)"
-        Try {
-            Switch ($PSCmdlet.ParameterSetName) {
-                "All" {
-                    Write-Warning "Retrieving all conversations for user $userId. Depending on the user's activity, this may take a while. Recommended to use the Top parameter to limit the number of conversations retrieved."
-                    $response = $conversation_manager.GetConversationsByUser($userId, 0)
-
-                } "Top" {
-                    $response = $conversation_manager.GetConversationsByUser($userId, $top)
-
-                }
-            }
-            Write-Debug "Response retrieved successfully"
-                
-        } Catch {
-            Write-Error "Error retrieving user conversations: $($_.Exception.Message)" -ErrorAction Stop
+        If ($PSCmdlet.ParameterSetName -eq "All") {
+            $top = 0
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved conversations for user: $userId"
-        $response
-    
-    }
+        Foreach ($id in $userId) {
+            Try {
+                Write-Debug "Retrieving user conversations for UserId: $id"
+                $conversation_manager.GetConversationsByUser($id, $top)
+            
+            } Catch {
+                Write-Error "Error retrieving user conversations: $($_.Exception.Message)" -ErrorAction Stop
+            
+            }
+        
+        }            
+        Write-Debug "Response retrieved successfully"
+    } 
 }

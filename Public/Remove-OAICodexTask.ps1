@@ -42,29 +42,16 @@ Function Remove-OAICodexTask {
     } Process {
         ForEach ($task in $taskId) {
             Write-Debug "Deleting codex task for TaskId: $task"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Delete codex task $task", "Remove-OAICodexTask", "Delete codex task")) {
-                    Try {
-                        $response = $codex_manager.DeleteCodexTask($task)
-                        Write-Debug "Codex task deleted successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error deleting codex task: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping codex task deletion due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Delete codex task $task", "Remove-OAICodexTask", "Delete codex task")) {
+                Try {
+                    $codex_manager.DeleteCodexTask($task)
+                    Write-Debug "Codex task deleted successfully"
+                
+                } Catch {
+                    Write-Error "Error deleting codex task: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error deleting codex task: $($_.Exception.Message)" -ErrorAction Stop
-            
-            }
+            } 
         }
-
-    } End {
-        Write-Debug "Successfully processed codex task deletion"
-    
-    }
+    } 
 }

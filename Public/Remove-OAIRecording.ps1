@@ -41,29 +41,16 @@ Function Remove-OAIRecording {
     } Process {
         ForEach ($recording in $recordingId) {
             Write-Debug "Deleting recording for RecordingId: $recording"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Delete recording $recording", "Remove-OAIRecording", "Delete recording")) {
-                    Try {
-                        $response = $recording_manager.DeleteRecording($recording)
-                        Write-Debug "Recording deleted successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error deleting recording: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping recording deletion due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Delete recording $recording", "Remove-OAIRecording", "Delete recording")) {
+                Try {
+                    $recording_manager.DeleteRecording($recording)
+                    Write-Debug "Recording deleted successfully"
+                
+                } Catch {
+                    Write-Error "Error deleting recording: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error deleting recording: $($_.Exception.Message)" -ErrorAction Stop
-            
             }
         }
-
-    } End {
-        Write-Debug "Successfully processed recording deletion"
-    
-    }
+    } 
 }

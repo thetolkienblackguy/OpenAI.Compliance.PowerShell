@@ -26,6 +26,7 @@ Function Get-OAIUserFileContent {
     [OutputType([System.Object])]
     param(
         [Parameter(Mandatory=$true, Position=0)]
+        [Alias("Id")]
         [string]$UserId,
         [Parameter(Mandatory=$true, Position=1)]
         [string]$FileId
@@ -43,17 +44,12 @@ Function Get-OAIUserFileContent {
     } Process {
         Write-Debug "Retrieving user file content for UserId: $userId, FileId: $fileId"
         Try {
-            $response = $user_manager.GetUserFileContent($userId, $fileId)
+            $user_manager.GetUserFileContent($userId, $fileId)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
             Write-Error "Error retrieving user file content: $($_.Exception.Message)" -ErrorAction Stop
         
-        }
-
-    } End {
-        Write-Debug "Successfully retrieved user file content"
-        $response
-    
-    }
+        } 
+    } 
 }

@@ -29,9 +29,9 @@ Function Get-OAIGPTConfiguration {
     [OutputType([System.Object[]])]
     param(
         [Parameter(Mandatory=$true, Position=0)]
-        [string]$GPTId,
+        [string[]]$GPTId,
         [Parameter(Mandatory=$false, Position=1)]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -45,25 +45,21 @@ Function Get-OAIGPTConfiguration {
         $gpt_manager = [OAIGPT]::new($script:client)
 
     } Process {
-        Write-Debug "Retrieving GPT configurations for GPTId: $gptId"
-        Try {
-            If ($top) {
-                $response = $gpt_manager.GetGPTConfigurations($gptId, $top)
+        If (!$top) {
+            $top = 0
+        
+        }
+        ForEach ($id in $gptId) {
+            Write-Debug "Retrieving GPT configurations for GPTId: $id"
+            Try {
+                $gpt_manager.GetGPTConfigurations($id, $top)
             
-            } Else {
-                $response = $gpt_manager.GetGPTConfigurations($gptId, $null)
+            } Catch {
+                Write-Error "Error retrieving GPT configurations: $($_.Exception.Message)" -ErrorAction Stop
             
             }
             Write-Debug "Response retrieved successfully"
-                
-        } Catch {
-            Write-Error "Error retrieving GPT configurations: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved GPT configurations"
-        $response
-    
-    }
+    } 
 }

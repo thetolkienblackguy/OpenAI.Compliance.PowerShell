@@ -45,29 +45,17 @@ Function Remove-OAIProjectFile {
         ForEach ($project in $projectId) {
             ForEach ($file in $fileId) {
                 Write-Debug "Deleting project file for ProjectId: $project, FileId: $file"
-                Try {
-                    If ($PSCmdlet.ShouldProcess("Delete project file $file for project $project", "Remove-OAIProjectFile", "Delete project file")) {
-                        Try {
-                            $response = $project_manager.DeleteProjectFile($project, $file)
-                            Write-Debug "Project file deleted successfully"
-                            $response
-                        
-                        } Catch {
-                            Write-Error "Error deleting project file: $($_.Exception.Message)" -ErrorAction Stop
-                        
-                        }
-                    } Else {
-                        Write-Debug "Skipping project file deletion due to ShouldProcess"
+                If ($PSCmdlet.ShouldProcess("Delete project file $file for project $project", "Remove-OAIProjectFile", "Delete project file")) {
+                    Try {
+                        $project_manager.DeleteProjectFile($project, $file)
+                        Write-Debug "Project file deleted successfully"
+                    
+                    } Catch {
+                        Write-Error "Error deleting project file: $($_.Exception.Message)" -ErrorAction Stop
                     
                     }
-                } Catch {
-                    Write-Error "Error deleting project file: $($_.Exception.Message)" -ErrorAction Stop
-                
-                }
+                } 
             }
         }
-    } End {
-        Write-Debug "Successfully processed project file deletion"
-    
-    }
+    } 
 }
