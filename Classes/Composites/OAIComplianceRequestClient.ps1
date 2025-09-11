@@ -5,6 +5,8 @@ class OAIComplianceRequestClient {
     hidden [string]$APIKey
     hidden [hashtable]$Headers
     hidden [hashtable]$RequestDetails
+    [int]$BatchSize = 10000
+    [int]$BatchPauseSeconds = 60
 
     OAIComplianceRequestClient([string]$workspaceId, [string]$apiKey) {
         $this.WorkspaceId = $workspaceId
@@ -91,6 +93,9 @@ class OAIComplianceRequestClient {
                 }
                 $total_retrieved += $items_to_add.Count
                 
+                # Handle batch pause at intervals
+                $this.HandleBatchPause($total_retrieved)
+                
                 # Check if we've reached the top limit
                 If ($top -gt 0 -and $total_retrieved -ge $top) {
                     break
@@ -107,6 +112,15 @@ class OAIComplianceRequestClient {
         } While ($response.has_more -and $response.last_id)
 
         return $this.Results
+    }
+
+    # Handle batch pause at specified intervals
+    hidden [void]HandleBatchPause([int]$total_retrieved) {
+        If ($total_retrieved % $this.BatchSize -eq 0 -and $total_retrieved -gt 0) {
+            Write-Warning "Retrieved $total_retrieved records. Pausing for $($this.BatchPauseSeconds) seconds..."
+            Start-Sleep -Seconds $this.BatchPauseSeconds
+        
+        }
     }
 
     # Get the items to add based on top limit
