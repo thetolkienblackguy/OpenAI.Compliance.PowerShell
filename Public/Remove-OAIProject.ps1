@@ -27,7 +27,7 @@ Function Remove-OAIProject {
     [OutputType([System.Object])]
     param(
         [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-        [string]$ProjectId
+        [string[]]$ProjectId
     
     )
     Begin {

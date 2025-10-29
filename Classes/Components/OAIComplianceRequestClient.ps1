@@ -71,6 +71,44 @@ class OAIComplianceRequestClient {
     
     }
 
+    # Invoke a file download request that follows 307 redirects
+    [object]InvokeFileDownload([string[]]$segments, [hashtable]$queryParams) {
+        $max_retries = 3
+        
+        For ($attempt = 1; $attempt -le $max_retries; $attempt++) {
+            # Invoke-WebRequest parameters (needed for redirect handling)
+            $invoke_web_params = @{}
+            $invoke_web_params["Method"] = "GET"
+            $invoke_web_params["Uri"] = $this.BuildComplianceUri($segments, $queryParams)
+            $invoke_web_params["Headers"] = $this.Headers
+            $invoke_web_params["MaximumRedirection"] = 1
+            
+            Try {
+                $this.RequestDetails = $invoke_web_params
+                $response = Invoke-WebRequest @invoke_web_params
+                return [System.Text.Encoding]::UTF8.GetString($response.Content)
+            
+            } Catch {
+                # Check if we should retry due to rate limiting
+                If ($this.HandleRateLimit()) {
+                    continue
+                
+                }
+                
+                # Log the error for non-retryable errors or final attempt
+                Write-Error "Failed to download file: $($_.Exception.Message)"
+                If ($attempt -eq $max_retries) {
+                    return $null
+                
+                }
+            
+            }
+        
+        }
+        
+        return $null
+    }
+
     # Paginate through all results for a GET request
     [object]Paginate([string[]]$segments, [hashtable]$queryParams, [int]$top = 0) {
         $this.Results = [system.collections.generic.list[pscustomobject]]::new()
@@ -105,11 +143,17 @@ class OAIComplianceRequestClient {
             }
             
             # Setup next page if more data exists
-            If ($response.has_more -and $response.last_id) {
-                $this.SetupNextPage($params, $response.last_id)
+            If ($response.has_more) {
+                If ($response.last_id) {
+                    $this.SetupNextPage($params, $response.last_id, "last_id")
+                
+                } ElseIf ($response.last_end_time) {
+                    $this.SetupNextPage($params, $response.last_end_time, "last_end_time")
+                
+                }
             
             }
-        } While ($response.has_more -and $response.last_id)
+        } While ($response.has_more -and ($response.last_id -or $response.last_end_time))
 
         return $this.Results
     }
@@ -140,13 +184,13 @@ class OAIComplianceRequestClient {
     }
 
     # Setup parameters for next page
-    hidden [void]SetupNextPage([hashtable]$params, [string]$lastId) {
+    hidden [void]SetupNextPage([hashtable]$params, [string]$cursorValue, [string]$cursorType) {
         # Remove since_timestamp to avoid parameter conflict
         If ($params.ContainsKey("since_timestamp")) {
             $params.Remove("since_timestamp")
         
         }
-        $params["after"] = $lastId
+        $params["after"] = $cursorValue
     }
 
     # Rate limiting method - reactive handling
@@ -262,6 +306,12 @@ class OAIComplianceRequestClient {
             return $sinceTimestamp
         
         }
+    
+    }
+
+    # Convert datetime to ISO 8601 string
+    static [string]ConvertToIso8601([datetime]$dateTime) {
+        return $dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
     
     }
 

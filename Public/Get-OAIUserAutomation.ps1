@@ -40,7 +40,7 @@ Function Get-OAIUserAutomation {
         [Parameter(Mandatory=$true, Position=1, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=1, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(1, 100)]
         [int]$Top
     
     )

@@ -27,7 +27,7 @@ Function Remove-OAIGPT {
     [OutputType([System.Object])]
     param(
         [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-        [string]$GPTId
+        [string[]]$GPTId
     
     )
     Begin {
