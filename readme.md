@@ -2,7 +2,7 @@
 
 [![PowerShell Gallery](https://img.shields.io/badge/PowerShell-5.1+-blue.svg)](https://docs.microsoft.com/en-us/powershell/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/Version-0.0.3-green.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.0.4-green.svg)]()
 
 > **⚠️ DISCLAIMER:** This is an unofficial, third-party PowerShell module. It is not developed, maintained, endorsed, or supported by OpenAI. This project is independent and community-driven.
 
@@ -108,6 +108,7 @@ The module uses a layered architecture with three main components:
 - **OAICodex** - Codex task and environment operations
 - **OAICanvas** - Canvas document operations
 - **OAIRecording** - Recording management and transcript access
+- **OAILogs** - Compliance log file retrieval and parsing
 
 #### Public Functions
 
@@ -129,6 +130,7 @@ PowerShell cmdlets that wrap the component class methods, providing:
 ### Conversation Management  
 
 - `Get-OAIConversation` - List conversations with filtering options
+- `Get-OAIUserConversation` - List conversations for a specific user
 - `Remove-OAIConversation` - Delete conversations
 
 ### GPT Management
@@ -183,6 +185,11 @@ PowerShell cmdlets that wrap the component class methods, providing:
 - `Remove-OAICodexTask` - Delete codex tasks
 - `Remove-OAICodexEnvironment` - Delete codex environments
 
+### Log Management
+
+- `Get-OAILogFile` - Retrieve compliance log file metadata (audit and auth logs)
+- `Get-OAILogFileContent` - Retrieve and parse compliance log file content
+
 ### Initialization
 
 - `Initialize-OAICompliance` - Initialize the API client
@@ -219,6 +226,12 @@ $recent = Get-OAIConversation -SinceTimestamp (Get-Date).AddDays(-7)
 
 # Get limited number of recent conversations
 $limited = Get-OAIConversation -SinceTimestamp (Get-Date).AddDays(-30) -SinceTop 100
+
+# Get conversations for a specific user
+$userConversations = Get-OAIUserConversation -UserId "user-123" -All
+
+# Get limited conversations for a user
+$limitedUserConversations = Get-OAIUserConversation -UserId "user-123" -Top 50
 
 # Delete conversation with confirmation
 Remove-OAIConversation -ConversationId "conv-123"
@@ -343,6 +356,22 @@ Remove-OAICodexTask -TaskId "task-123"
 
 # Delete codex environment
 Remove-OAICodexEnvironment -EnvironmentId "env-456"
+```
+
+### Log Operations
+
+```powershell
+# Get audit logs from last 7 days
+$auditLogs = Get-OAILogFile -EventType "AUDIT_LOG" -After (Get-Date).AddDays(-7) -All
+
+# Get auth logs with date range
+$authLogs = Get-OAILogFile -EventType "AUTH_LOG" -After (Get-Date).AddDays(-30) -Before (Get-Date) -Top 50
+
+# Get limited number of audit logs
+$limitedLogs = Get-OAILogFile -EventType "AUDIT_LOG" -After "2025-01-01" -Top 10
+
+# Get log file content by ID
+$logContent = Get-OAILogFileContent -LogFileId "log-123"
 ```
 
 ## Error Handling

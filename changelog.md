@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2025-11-05
+
+### Added
+
+- `Get-OAIUserConversation` - Retrieve conversations for a specific user with full or limited result sets
+- `Get-OAILogFile` - Retrieve compliance log file metadata for audit and auth logs
+- `Get-OAILogFileContent` - Retrieve and parse compliance log file content
+- `OAILogs` class for compliance log file retrieval and parsing operations
+- Batch pause logic to OAIComplianceRequestClient with configurable batch size and pause duration to throttle large data retrievals
+- Enhanced pipeline support across Get/Remove cmdlets with aliases for key parameters
+- GetConversationsByUser() method to OAIConversation class
+- GetLogFiles() and GetLogFileContent() methods to new OAILogs class
+
+### Changed
+
+- Reorganized class files from Components to Composites directory for better structural organization
+- Refactored OAIComplianceRequestClient with improved batch processing controls (BatchSize, BatchPauseSeconds)
+- Enhanced pagination and cursor handling throughout the request client
+- Improved parameter validation ranges and consistency across multiple cmdlets
+- Updated conversation and user API methods with better organization
+- Standardized error handling and removed unnecessary End blocks and response variables
+- Simplified cmdlet output patterns for improved scriptability
+
+### Removed
+
+- Debug-OAIResponses cmdlet (functionality integrated into core debugging)
+
 ## [0.0.3] - 2025-09-04
 
 ### Added
