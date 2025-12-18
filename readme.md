@@ -19,7 +19,11 @@ A comprehensive PowerShell module for interacting with the OpenAI ChatGPT Enterp
 - [Available Cmdlets](#available-cmdlets)
 - [Usage Examples](#usage-examples)
 - [Error Handling](#error-handling)
+- [Batch Processing](#batch-processing)
 - [Rate Limiting](#rate-limiting)
+- [Advanced Usage](#advanced-usage)
+- [Parameter Patterns](#parameter-patterns)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -93,11 +97,15 @@ The module uses a layered architecture with three main components:
 #### Core Client (`OAIComplianceRequestClient`)
 
 - Handles authentication and HTTP requests
-- Provides pagination support for list endpoints
-- Manages rate limiting and error handling
+- Pagination for list endpoints with multiple cursor types (`last_id`, `last_end_time`)
+- Automatic batch processing controls (`BatchSize`, `BatchPauseSeconds`)
+- File downloads that follow 307 redirects
+- Rate limiting with retries and `Retry-After` handling
 - URL encoding for query parameters
 
-#### Component Classes
+#### Composite Classes
+
+Resource-specific classes organized in the `Classes/Composites` directory:
 
 - **OAIUser** - User management and file operations
 - **OAIConversation** - Conversation data export and deletion
@@ -372,6 +380,9 @@ $limitedLogs = Get-OAILogFile -EventType "AUDIT_LOG" -After "2025-01-01" -Top 10
 
 # Get log file content by ID
 $logContent = Get-OAILogFileContent -LogFileId "log-123"
+
+# Pipeline: Get logs and download content
+Get-OAILogFile -EventType "AUDIT_LOG" -After (Get-Date).AddDays(-1) -Top 5 | Get-OAILogFileContent -Deduplicate
 ```
 
 ## Error Handling
@@ -422,6 +433,23 @@ Remove-OAIConversation -ConversationId "conv-123" -Confirm:$false
 
 # Bulk operations with individual confirmations
 Get-OAIGPT -All | Remove-OAIGPT -Confirm
+```
+
+## Batch Processing
+
+The module includes automatic batch processing controls for large data retrievals:
+
+- **Default batch size:** 10,000 records
+- **Default batch pause:** 60 seconds between batches
+- This throttles large data exports to prevent rate limiting and API overload
+
+Batch pauses occur automatically when retrieving large result sets with `-All`. You'll see warning messages indicating when the module is pausing:
+
+```powershell
+# This will automatically pause every 10,000 records
+Get-OAIConversation -All
+
+# Output: Retrieved 10000 records. Pausing for 60 seconds...
 ```
 
 ## Rate Limiting
@@ -530,6 +558,38 @@ Get-OAIProject -ProjectId "proj-456"
 Get-OAICodexTask -TaskId "task-789"
 ```
 
+### Array Input Support
+
+Several cmdlets support multiple IDs in array format for batch operations:
+
+```powershell
+# Process multiple GPTs in one call
+Get-OAIGPT -GPTId @("gpt-123", "gpt-456", "gpt-789")
+
+# Process multiple files
+Get-OAIGPTFileContent -FileId @("file-1", "file-2", "file-3")
+
+# Get configurations for multiple projects
+Get-OAIProjectConfiguration -ProjectId @("proj-123", "proj-456")
+
+# Process user conversations in bulk
+Get-OAIUserConversation -UserId @("user-1", "user-2", "user-3") -All
+```
+
+### Parameter Aliases
+
+Many Get cmdlets support the `Id` alias for more convenient pipeline usage:
+
+```powershell
+# All of these are equivalent due to Id alias support
+Get-OAIGPT -GPTId "gpt-123"
+Get-OAIGPT -Id "gpt-123"
+
+# Particularly useful for pipeline operations
+$gptList | Get-OAIGPT  # Pipes via Id alias
+$fileList | Get-OAIGPTFileContent  # Pipes via Id alias
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -595,14 +655,18 @@ This module provides complete coverage of the OpenAI ChatGPT Enterprise Complian
 - ✅ Recordings (workspace and user-level export, delete, transcripts)
 - ✅ Codex Tasks (export, delete)
 - ✅ Codex Environments (export, delete)
+- ✅ Logs (file metadata and content)
 
 ### API Features
 
-- ✅ Pagination support for all list endpoints
+- ✅ Pagination support for all list endpoints with multiple cursor types
 - ✅ Timestamp filtering for incremental exports
 - ✅ File content retrieval via 307 redirects
 - ✅ Proper URL encoding for query parameters
 - ✅ Comprehensive error handling
+- ✅ Automatic batch processing with configurable pause intervals
+- ✅ Compliance log file retrieval and parsing (JSONL with deduplication)
+- ✅ Enhanced pipeline support with parameter aliases
 
 ## Requirements
 

@@ -21,12 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Reorganized class files from Components to Composites directory for better structural organization
-- Refactored OAIComplianceRequestClient with improved batch processing controls (BatchSize, BatchPauseSeconds)
-- Enhanced pagination and cursor handling throughout the request client
-- Improved parameter validation ranges and consistency across multiple cmdlets
-- Updated conversation and user API methods with better organization
-- Standardized error handling and removed unnecessary End blocks and response variables
-- Simplified cmdlet output patterns for improved scriptability
+- Refactored OAIComplianceRequestClient: Replaced `MaxRetries` with `BatchSize` (10000) and `BatchPauseSeconds` (60) properties
+- Enhanced pagination with support for multiple cursor types (`last_id` and `last_end_time`)
+- Added `InvokeFileDownload()` method for proper 307 redirect handling
+- Improved parameter validation ranges from `ValidateRange(1, [int]::MaxValue)` to `ValidateRange(0, 100)`
+- Standardized Get cmdlets: removed End blocks and response variables for improved pipeline integration
+- Enhanced pipeline support across Get and Remove cmdlets with `ValueFromPipeline` and `ValueFromPipelineByPropertyName` attributes
+- Added parameter aliases (e.g., `[Alias("Id")]`) for improved usability
+- Updated OAIUser class: removed deprecated `DeleteUserFile()` overload without conversation context
+- Multiple cmdlets now support array inputs for batch operations
 
 ### Removed
 
@@ -73,7 +76,7 @@ Get-OAIConversation returning null: Fixed conversations endpoint requiring since
   - `OAICodex` - Codex task and environment operations
   - `OAICanvas` - Canvas document operations
   - `OAIRecording` - Recording management and transcript access
-- 37 public PowerShell cmdlets covering all API endpoints:
+- 39 public PowerShell cmdlets covering all API endpoints:
   - User Management: `Get-OAIUser`, `Get-OAIUserFileContent`, `Remove-OAIUserFile`
   - Conversation Management: `Get-OAIConversation`, `Remove-OAIConversation`
   - GPT Management: `Get-OAIGPT`, `Get-OAIGPTConfiguration`, `Get-OAIGPTFileContent`, `Get-OAIGPTSharedUser`, `Remove-OAIGPT`, `Remove-OAIGPTFile`, `Revoke-OAIGPTAccess`
