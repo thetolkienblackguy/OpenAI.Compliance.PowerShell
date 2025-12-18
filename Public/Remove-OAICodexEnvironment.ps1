@@ -41,29 +41,16 @@ Function Remove-OAICodexEnvironment {
     } Process {
         ForEach ($environment in $environmentId) {
             Write-Debug "Deleting codex environment for EnvironmentId: $environment"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Delete codex environment $environment", "Remove-OAICodexEnvironment", "Delete codex environment")) {
-                    Try {
-                        $response = $codex_manager.DeleteCodexEnvironment($environment)
-                        Write-Debug "Codex environment deleted successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error deleting codex environment: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping codex environment deletion due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Delete codex environment $environment", "Remove-OAICodexEnvironment", "Delete codex environment")) {
+                Try {
+                    $codex_manager.DeleteCodexEnvironment($environment)
+                    Write-Debug "Codex environment deleted successfully"
+                
+                } Catch {
+                    Write-Error "Error deleting codex environment: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error deleting codex environment: $($_.Exception.Message)" -ErrorAction Stop
-            
-            }
+            } 
         }
-
-    } End {
-        Write-Debug "Successfully processed codex environment deletion"
-    
-    }
+    } 
 }

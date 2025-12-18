@@ -5,7 +5,8 @@ class OAIComplianceRequestClient {
     hidden [string]$APIKey
     hidden [hashtable]$Headers
     hidden [hashtable]$RequestDetails
-    [int]$MaxRetries = 3
+    [int]$BatchSize = 10000
+    [int]$BatchPauseSeconds = 60
 
     OAIComplianceRequestClient([string]$workspaceId, [string]$apiKey) {
         $this.WorkspaceId = $workspaceId
@@ -14,13 +15,14 @@ class OAIComplianceRequestClient {
         $this.Headers = @{}
         $this.Headers["Authorization"] = "Bearer $($this.APIKey)"
         $this.Headers["Content-Type"] = "application/json"
-    
     }
 
     #region Request Methods
     # Invoke a request to the OpenAI Compliance API
-    hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {        
-        For ($attempt = 1; $attempt -le $this.MaxRetries; $attempt++) {
+    hidden [object]InvokeRequest([string]$method, [hashtable]$body, [string[]]$segments, [hashtable]$queryParams) {
+        $max_retries = 3
+        
+        For ($attempt = 1; $attempt -le $max_retries; $attempt++) {
             # Invoke-RestMethod parameters
             $invoke_rest_params = @{}
             $invoke_rest_params["Method"] = $method
@@ -45,12 +47,15 @@ class OAIComplianceRequestClient {
                 
                 # Log the error for non-retryable errors or final attempt
                 Write-Error "Failed to invoke request: $($_.Exception.Message)"
-                If ($attempt -eq $this.MaxRetries) {
+                If ($attempt -eq $max_retries) {
                     return $null
                 
                 }
+            
             }
-        }  
+        
+        }
+        
         return $null
     }
 
@@ -64,6 +69,44 @@ class OAIComplianceRequestClient {
     hidden [object]InvokeDeleteRequest([string[]]$segments, [hashtable]$queryParams) {
         return $this.InvokeRequest("DELETE", $null, $segments, $queryParams)
     
+    }
+
+    # Invoke a file download request that follows 307 redirects
+    [object]InvokeFileDownload([string[]]$segments, [hashtable]$queryParams) {
+        $max_retries = 3
+        
+        For ($attempt = 1; $attempt -le $max_retries; $attempt++) {
+            # Invoke-WebRequest parameters (needed for redirect handling)
+            $invoke_web_params = @{}
+            $invoke_web_params["Method"] = "GET"
+            $invoke_web_params["Uri"] = $this.BuildComplianceUri($segments, $queryParams)
+            $invoke_web_params["Headers"] = $this.Headers
+            $invoke_web_params["MaximumRedirection"] = 1
+            
+            Try {
+                $this.RequestDetails = $invoke_web_params
+                $response = Invoke-WebRequest @invoke_web_params
+                return [System.Text.Encoding]::UTF8.GetString($response.Content)
+            
+            } Catch {
+                # Check if we should retry due to rate limiting
+                If ($this.HandleRateLimit()) {
+                    continue
+                
+                }
+                
+                # Log the error for non-retryable errors or final attempt
+                Write-Error "Failed to download file: $($_.Exception.Message)"
+                If ($attempt -eq $max_retries) {
+                    return $null
+                
+                }
+            
+            }
+        
+        }
+        
+        return $null
     }
 
     # Paginate through all results for a GET request
@@ -88,21 +131,40 @@ class OAIComplianceRequestClient {
                 }
                 $total_retrieved += $items_to_add.Count
                 
+                # Handle batch pause at intervals
+                $this.HandleBatchPause($total_retrieved)
+                
                 # Check if we've reached the top limit
                 If ($top -gt 0 -and $total_retrieved -ge $top) {
                     break
                 
-                }         
+                }
+            
             }
             
             # Setup next page if more data exists
-            If ($response.has_more -and $response.last_id) {
-                $this.SetupNextPage($params, $response.last_id)
+            If ($response.has_more) {
+                If ($response.last_id) {
+                    $this.SetupNextPage($params, $response.last_id, "last_id")
+                
+                } ElseIf ($response.last_end_time) {
+                    $this.SetupNextPage($params, $response.last_end_time, "last_end_time")
+                
+                }
             
             }
-        } While ($response.has_more -and $response.last_id)
+        } While ($response.has_more -and ($response.last_id -or $response.last_end_time))
 
         return $this.Results
+    }
+
+    # Handle batch pause at specified intervals
+    hidden [void]HandleBatchPause([int]$total_retrieved) {
+        If ($total_retrieved % $this.BatchSize -eq 0 -and $total_retrieved -gt 0) {
+            Write-Warning "Retrieved $total_retrieved records. Pausing for $($this.BatchPauseSeconds) seconds..."
+            Start-Sleep -Seconds $this.BatchPauseSeconds
+        
+        }
     }
 
     # Get the items to add based on top limit
@@ -115,19 +177,20 @@ class OAIComplianceRequestClient {
             } ElseIf ($data.Count -gt $remaining_needed) {
                 return $data[0..($remaining_needed - 1)]
             
-            }       
+            }
+        
         }
         return $data
     }
 
     # Setup parameters for next page
-    hidden [void]SetupNextPage([hashtable]$params, [string]$lastId) {
+    hidden [void]SetupNextPage([hashtable]$params, [string]$cursorValue, [string]$cursorType) {
         # Remove since_timestamp to avoid parameter conflict
         If ($params.ContainsKey("since_timestamp")) {
             $params.Remove("since_timestamp")
         
         }
-        $params["after"] = $lastId
+        $params["after"] = $cursorValue
     }
 
     # Rate limiting method - reactive handling
@@ -163,7 +226,8 @@ class OAIComplianceRequestClient {
             If ($response -and $response.StatusCode) {
                 return ($response.StatusCode -eq 429)
             
-            }    
+            }
+        
         }
         return $false
     }
@@ -182,7 +246,7 @@ class OAIComplianceRequestClient {
             If ($response -and $response.Headers) {
                 return $response.Headers["Retry-After"]
             
-            }       
+            }  
         }
         return $null
     }
@@ -242,6 +306,12 @@ class OAIComplianceRequestClient {
             return $sinceTimestamp
         
         }
+    
+    }
+
+    # Convert datetime to ISO 8601 string
+    static [string]ConvertToIso8601([datetime]$dateTime) {
+        return $dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
     
     }
 

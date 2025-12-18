@@ -31,7 +31,7 @@ Function Get-OAIProjectSharedUser {
         [Parameter(Mandatory=$true, Position=0)]
         [string]$ProjectId,
         [Parameter(Mandatory=$false, Position=1)]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -46,14 +46,12 @@ Function Get-OAIProjectSharedUser {
 
     } Process {
         Write-Debug "Retrieving project shared users for ProjectId: $projectId"
+        If (!$top) {
+            $top = 0
+        
+        }
         Try {
-            If ($top) {
-                $response = $project_manager.GetProjectSharedUsers($projectId, $top)
-            
-            } Else {
-                $response = $project_manager.GetProjectSharedUsers($projectId, $null)
-            
-            }
+            $project_manager.GetProjectSharedUsers($projectId, $top)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
@@ -61,9 +59,5 @@ Function Get-OAIProjectSharedUser {
         
         }
 
-    } End {
-        Write-Debug "Successfully retrieved project shared users"
-        $response
-    
-    }
+    } 
 }

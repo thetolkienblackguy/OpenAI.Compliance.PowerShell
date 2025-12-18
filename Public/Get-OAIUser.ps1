@@ -34,7 +34,7 @@ Function Get-OAIUser {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -50,15 +50,11 @@ Function Get-OAIUser {
     } Process {
         Write-Debug "Retrieving workspace users with parameter set: $($PSCmdlet.ParameterSetName)"
         Try {
-            Switch ($PSCmdlet.ParameterSetName) {
-                "All" {
-                    $response = $user_manager.GetUsers($null)
-
-                } "Top" {
-                    $response = $user_manager.GetUsers($top)
-
-                }
+            If ($PSCmdlet.ParameterSetName -eq "All") {
+                $top = 0
+            
             }
+            $user_manager.GetUsers($top)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
@@ -66,9 +62,5 @@ Function Get-OAIUser {
         
         }
 
-    } End {
-        Write-Debug "Successfully retrieved workspace users"
-        $response
-    
-    }
+    } 
 }

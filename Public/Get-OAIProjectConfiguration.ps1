@@ -31,7 +31,7 @@ Function Get-OAIProjectConfiguration {
         [Parameter(Mandatory=$true, Position=0)]
         [string]$ProjectId,
         [Parameter(Mandatory=$false, Position=1)]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -47,23 +47,16 @@ Function Get-OAIProjectConfiguration {
     } Process {
         Write-Debug "Retrieving project configurations for ProjectId: $projectId"
         Try {
-            If ($top) {
-                $response = $project_manager.GetProjectConfigurations($projectId, $top)
-            
-            } Else {
-                $response = $project_manager.GetProjectConfigurations($projectId, $null)
+            If (!$top) {
+                $top = 0
             
             }
+            $project_manager.GetProjectConfigurations($projectId, $top)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
             Write-Error "Error retrieving project configurations: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved project configurations"
-        $response
-    
-    }
+    } 
 }

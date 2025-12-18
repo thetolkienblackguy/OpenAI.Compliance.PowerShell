@@ -39,29 +39,16 @@ Function Remove-OAIConversation {
     } Process {
         ForEach ($id in $conversationId) {
             Write-Debug "Deleting conversation: $id"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Delete conversation $id", "Remove-OAIConversation", "Delete conversation")) {
-                    Try {
-                        $response = $conversation_manager.DeleteConversation($id)
-                        Write-Debug "Conversation deleted successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error deleting conversation: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping conversation deletion due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Delete conversation $id", "Remove-OAIConversation", "Delete conversation")) {
+                Try {
+                    $conversation_manager.DeleteConversation($id)
+                    Write-Debug "Conversation deleted successfully"
+                
+                } Catch {
+                    Write-Error "Error deleting conversation: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error deleting conversation: $($_.Exception.Message)" -ErrorAction Stop
-            
-            }
+            } 
         }
-
-    } End {
-        Write-Debug "Successfully processed conversation deletion"
-    
-    }
+    } 
 }

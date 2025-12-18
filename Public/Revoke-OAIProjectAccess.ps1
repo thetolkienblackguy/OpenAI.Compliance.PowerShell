@@ -42,28 +42,16 @@ Function Revoke-OAIProjectAccess {
     } Process {
         ForEach ($id in $projectId) {
             Write-Debug "Revoking project access: $id"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Revoke access to project $id (remove all shared users)", "Revoke-OAIProjectAccess", "Revoke project access")) {
-                    Try {
-                        $response = $project_manager.IsolateProject($id)
-                        Write-Debug "Project access revoked successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error revoking project access: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping project access revocation due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Revoke access to project $id (remove all shared users)", "Revoke-OAIProjectAccess", "Revoke project access")) {
+                Try {
+                    $project_manager.IsolateProject($id)
+                    Write-Debug "Project access revoked successfully"
+                
+                } Catch {
+                    Write-Error "Error revoking project access: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error revoking project access: $($_.Exception.Message)" -ErrorAction Stop
-            
             }
-        }
-    } End {
-        Write-Debug "Successfully processed project access revocation"
-    
-    }
+        }     
+    } 
 }

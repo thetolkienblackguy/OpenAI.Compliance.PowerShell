@@ -28,10 +28,11 @@ Function Get-OAIUserCanvas {
     [CmdletBinding()]
     [OutputType([System.Object[]])]
     param(
-        [Parameter(Mandatory=$true, Position=0)]
-        [string]$UserId,
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [Alias("Id")]
+        [string[]]$UserId,
         [Parameter(Mandatory=$false, Position=1)]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -45,23 +46,21 @@ Function Get-OAIUserCanvas {
         $canvas_manager = [OAICanvas]::new($script:client)
 
     } Process {
-        Write-Debug "Retrieving user canvases for UserId: $userId"
-        Try {
-            If ($top) {
-                $response = $canvas_manager.GetUserCanvases($userId, $top)
-            
-            } Else {
-                $response = $canvas_manager.GetUserCanvases($userId, $null)
-            }
-            Write-Debug "Response retrieved successfully"
-                
-        } Catch {
-            Write-Error "Error retrieving user canvases: $($_.Exception.Message)" -ErrorAction Stop
+        If (!$top) {
+            $top = 0
         
+        } 
+        ForEach ($id in $userId) {
+            Try {
+                Write-Debug "Retrieving user canvases for UserId: $id"
+                $canvas_manager.GetUserCanvases($id, $top)
+        
+            } Catch {
+                Write-Error "Error retrieving user canvases: $($_.Exception.Message)" -ErrorAction Stop
+            
+            }
         }
-    } End {
-        Write-Debug "Successfully retrieved user canvases"
-        $response
-    
-    }
+        Write-Debug "Response retrieved successfully"
+
+    } 
 }

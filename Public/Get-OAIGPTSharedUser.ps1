@@ -29,9 +29,9 @@ Function Get-OAIGPTSharedUser {
     [OutputType([System.Object[]])]
     param(
         [Parameter(Mandatory=$true, Position=0)]
-        [string]$GPTId,
+        [string[]]$GPTId,
         [Parameter(Mandatory=$false, Position=1)]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top
     
     )
@@ -45,25 +45,19 @@ Function Get-OAIGPTSharedUser {
         $gpt_manager = [OAIGPT]::new($script:client)
 
     } Process {
-        Write-Debug "Retrieving GPT shared users for GPTId: $gptId"
-        Try {
-            If ($top) {
-                $response = $gpt_manager.GetGPTSharedUsers($gptId, $top)
-            
-            } Else {
-                $response = $gpt_manager.GetGPTSharedUsers($gptId, $null)
-            
-            }
-            Write-Debug "Response retrieved successfully"
-                
-        } Catch {
-            Write-Error "Error retrieving GPT shared users: $($_.Exception.Message)" -ErrorAction Stop
+        If (!$top) {
+            $top = 0
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved GPT shared users"
-        $response
-    
+        ForEach ($id in $gptId) {
+            Write-Debug "Retrieving GPT shared users for GPTId: $id"
+            Try {
+                $gpt_manager.GetGPTSharedUsers($id, $top)
+            
+            } Catch {
+                Write-Error "Error retrieving GPT shared users: $($_.Exception.Message)" -ErrorAction Stop
+            
+            }
+        }
     }
 }

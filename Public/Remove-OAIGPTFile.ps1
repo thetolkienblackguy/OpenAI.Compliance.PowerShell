@@ -45,29 +45,17 @@ Function Remove-OAIGPTFile {
         ForEach ($gpt in $gptId) {
             ForEach ($file in $fileId) {
                 Write-Debug "Deleting GPT file for GPTId: $gpt, FileId: $file"
-                Try {
-                    If ($PSCmdlet.ShouldProcess("Delete GPT file $file for GPT $gpt", "Remove-OAIGPTFile", "Delete GPT file")) {
-                        Try {
-                            $response = $gpt_manager.DeleteGPTFile($gpt, $file)
-                            Write-Debug "GPT file deleted successfully"
-                            $response
-                        
-                        } Catch {
-                            Write-Error "Error deleting GPT file: $($_.Exception.Message)" -ErrorAction Stop
-                        
-                        }
-                    } Else {
-                        Write-Debug "Skipping GPT file deletion due to ShouldProcess"
+                If ($PSCmdlet.ShouldProcess("Delete GPT file $file for GPT $gpt", "Remove-OAIGPTFile", "Delete GPT file")) {
+                    Try {
+                        $gpt_manager.DeleteGPTFile($gpt, $file)
+                        Write-Debug "GPT file deleted successfully"
+                    
+                    } Catch {
+                        Write-Error "Error deleting GPT file: $($_.Exception.Message)" -ErrorAction Stop
                     
                     }
-                } Catch {
-                    Write-Error "Error deleting GPT file: $($_.Exception.Message)" -ErrorAction Stop
-                
-                }
+                } 
             }
         }
-    } End {
-        Write-Debug "Successfully processed GPT file deletion"
-    
-    }
+    } 
 }

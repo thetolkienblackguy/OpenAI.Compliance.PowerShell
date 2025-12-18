@@ -47,29 +47,17 @@ Function Remove-OAICanvas {
         ForEach ($user in $userId) {
             ForEach ($textdoc in $textdocId) {
                 Write-Debug "Deleting canvas for UserId: $user, TextdocId: $textdoc"
-                Try {
-                    If ($PSCmdlet.ShouldProcess("Delete canvas $textdoc for user $user", "Remove-OAICanvas", "Delete canvas")) {
-                        Try {
-                            $response = $canvas_manager.DeleteCanvas($user, $textdoc)
-                            Write-Debug "Canvas deleted successfully"
-                            $response
-                        
-                        } Catch {
-                            Write-Error "Error deleting canvas: $($_.Exception.Message)" -ErrorAction Stop
-                        
-                        }
-                    } Else {
-                        Write-Debug "Skipping canvas deletion due to ShouldProcess"
+                If ($PSCmdlet.ShouldProcess("Delete canvas $textdoc for user $user", "Remove-OAICanvas", "Delete canvas")) {
+                    Try {
+                        $canvas_manager.DeleteCanvas($user, $textdoc)
+                        Write-Debug "Canvas deleted successfully"
+                    
+                    } Catch {
+                        Write-Error "Error deleting canvas: $($_.Exception.Message)" -ErrorAction Stop
                     
                     }
-                } Catch {
-                    Write-Error "Error deleting canvas: $($_.Exception.Message)" -ErrorAction Stop
-                
                 }
             }
         }
-    } End {
-        Write-Debug "Successfully processed canvas deletion"
-    
-    }
+    } 
 }

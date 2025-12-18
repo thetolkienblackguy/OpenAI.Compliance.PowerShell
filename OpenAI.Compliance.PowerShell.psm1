@@ -4,7 +4,7 @@ $PSDefaultParameterValues["Get-ChildItem:File"] = $true
 $PSDefaultParameterValues["Join-Path:Path"] = $PSScriptRoot
 
 # Import all classes, private functions, and public functions
-$imports = @("Classes\Composites", "Classes\Components", "Public")
+$imports = @( "Classes\Components", "Classes\Composites", "Public")
 $class_types = @{}
 Foreach ($import in $imports) {
     # Get the path to the import folder

@@ -27,7 +27,7 @@ Function Remove-OAIProject {
     [OutputType([System.Object])]
     param(
         [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-        [string]$ProjectId
+        [string[]]$ProjectId
     
     )
     Begin {
@@ -42,29 +42,16 @@ Function Remove-OAIProject {
     } Process {
         ForEach ($id in $projectId) {
             Write-Debug "Deleting project: $id"
-            Try {
-                If ($PSCmdlet.ShouldProcess("Delete project $id", "Remove-OAIProject", "Delete project")) {
-                    Try {
-                        $response = $project_manager.DeleteProject($id)
-                        Write-Debug "Project deleted successfully"
-                        $response
-                    
-                    } Catch {
-                        Write-Error "Error deleting project: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
-                } Else {
-                    Write-Debug "Skipping project deletion due to ShouldProcess"
+            If ($PSCmdlet.ShouldProcess("Delete project $id", "Remove-OAIProject", "Delete project")) {
+                Try {
+                    $project_manager.DeleteProject($id)
+                    Write-Debug "Project deleted successfully"
+                
+                } Catch {
+                    Write-Error "Error deleting project: $($_.Exception.Message)" -ErrorAction Stop
                 
                 }
-            } Catch {
-                Write-Error "Error deleting project: $($_.Exception.Message)" -ErrorAction Stop
-            
-            }
+            } 
         }
-
-    } End {
-        Write-Debug "Successfully processed project deletion"
-    
-    }
+    } 
 }

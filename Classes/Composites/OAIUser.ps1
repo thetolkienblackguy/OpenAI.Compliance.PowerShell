@@ -20,13 +20,6 @@ class OAIUser {
     
     }
 
-    # Delete user-owned file
-    [object]DeleteUserFile([string]$userId, [string]$fileId) {
-        $segments = @("users", $userId, "files", $fileId)
-        return $this.Client.InvokeDeleteRequest($segments, @{})
-    
-    }
-
     # Delete user-owned file with conversation context (required for audio/video files)
     [object]DeleteUserFile([string]$userId, [string]$fileId, [string]$conversationId) {
         $segments = @("users", $userId, "files", $fileId)

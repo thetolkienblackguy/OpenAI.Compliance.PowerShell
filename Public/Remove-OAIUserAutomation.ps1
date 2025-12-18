@@ -47,30 +47,17 @@ Function Remove-OAIUserAutomation {
         ForEach ($user in $userId) {
             ForEach ($automation in $automationId) {
                 Write-Debug "Deleting user automation for UserId: $user, AutomationId: $automation"
-                Try {
-                    If ($PSCmdlet.ShouldProcess("Delete automation $automation for user $user", "Remove-OAIUserAutomation", "Delete user automation")) {
-                        Try {
-                            $response = $automation_manager.DeleteUserAutomation($user, $automation)
-                            Write-Debug "Automation deleted successfully"
-                            $response
-                        
-                        } Catch {
-                            Write-Error "Error deleting user automation: $($_.Exception.Message)" -ErrorAction Stop
-                        
-                        }
-                    } Else {
-                        Write-Debug "Skipping user automation deletion due to ShouldProcess"
+                If ($PSCmdlet.ShouldProcess("Delete automation $automation for user $user", "Remove-OAIUserAutomation", "Delete user automation")) {
+                    Try {
+                        $automation_manager.DeleteUserAutomation($user, $automation)
+                        Write-Debug "Automation deleted successfully"
+                    
+                    } Catch {
+                        Write-Error "Error deleting user automation: $($_.Exception.Message)" -ErrorAction Stop
                     
                     }
-                } Catch {
-                    Write-Error "Error deleting user automation: $($_.Exception.Message)" -ErrorAction Stop
-                
-                }
+                } 
             }
         }
-
-    } End {
-        Write-Debug "Successfully processed user automation deletion"
-    
-    }
+    } 
 }

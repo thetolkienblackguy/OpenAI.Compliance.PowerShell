@@ -53,36 +53,23 @@ Function Remove-OAIUserFile {
         ForEach ($user in $userId) {
             ForEach ($file in $fileId) {
                 Write-Debug "Deleting user file for UserId: $user, FileId: $file"
-                Try {
-                    If ($PSCmdlet.ShouldProcess("Delete user file $file for user $user", "Remove-OAIUserFile", "Delete user file")) {
-                        Try {
-                            If ($conversationId) {
-                                $response = $user_manager.DeleteUserFile($user, $file, $conversationId)
-                            
-                            } Else {
-                                $response = $user_manager.DeleteUserFile($user, $file, $null)
-                            
-                            }
-                            Write-Debug "File deleted successfully"
-                            $response
+                If ($PSCmdlet.ShouldProcess("Delete user file $file for user $user", "Remove-OAIUserFile", "Delete user file")) {
+                    Try {
+                        If ($conversationId) {
+                            $user_manager.DeleteUserFile($user, $file, $conversationId)
                         
-                        } Catch {
-                            Write-Error "Error deleting user file: $($_.Exception.Message)" -ErrorAction Stop
+                        } Else {
+                            $user_manager.DeleteUserFile($user, $file, $null)
                         
                         }
-                    } Else {
-                        Write-Debug "Skipping user file deletion due to ShouldProcess"
+                        Write-Debug "File deleted successfully"
+                    
+                    } Catch {
+                        Write-Error "Error deleting user file: $($_.Exception.Message)" -ErrorAction Stop
                     
                     }
-                } Catch {
-                    Write-Error "Error deleting user file: $($_.Exception.Message)" -ErrorAction Stop
-                
                 }
             }
         }
-
-    } End {
-        Write-Debug "Successfully processed user file deletion"
-    
-    }
+    } 
 }

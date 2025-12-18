@@ -27,7 +27,7 @@
     PrivateData = @{
         PSData = @{
             Tags         = @("OpenAI", "ChatGPT", "Compliance", "PowerShell", "API", "REST")
-            ReleaseNotes = "v0.0.4 - Fixed a bug that prevented the module from being loaded in PowerShell 5.1."
+            ReleaseNotes = "v0.0.4 - Added log file management (Get-OAILogFile, Get-OAILogFileContent), user conversation querying (Get-OAIUserConversation), batch processing controls, enhanced pipeline support with aliases, and improved pagination handling."
         }
     }
 }

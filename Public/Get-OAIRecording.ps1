@@ -41,7 +41,7 @@ Function Get-OAIRecording {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="ById", ValueFromPipelineByPropertyName=$true)]
         [string]$RecordingId
@@ -61,13 +61,13 @@ Function Get-OAIRecording {
         Try {
             Switch ($PSCmdlet.ParameterSetName) {
                 "All" {
-                    $response = $recording_manager.GetRecordings($null)
+                    $recording_manager.GetRecordings($null)
 
                 } "Top" {
-                    $response = $recording_manager.GetRecordings($top)
+                    $recording_manager.GetRecordings($top)
 
                 } "ById" {
-                    $response = $recording_manager.GetRecording($recordingId)
+                    $recording_manager.GetRecording($recordingId)
 
                 }
             }
@@ -77,10 +77,5 @@ Function Get-OAIRecording {
             Write-Error "Error retrieving recordings: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved recordings"
-        $response
-    
-    }
+    } 
 }

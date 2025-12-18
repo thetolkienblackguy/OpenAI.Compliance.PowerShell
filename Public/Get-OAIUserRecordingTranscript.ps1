@@ -34,7 +34,8 @@ Function Get-OAIUserRecordingTranscript {
     [CmdletBinding()]
     [OutputType([System.Object])]
     param(
-        [Parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [Alias("Id")]
         [string]$UserId,
         [Parameter(Mandatory=$true, Position=1, ValueFromPipelineByPropertyName=$true)]
         [string]$RecordingId,
@@ -54,16 +55,12 @@ Function Get-OAIUserRecordingTranscript {
     } Process {
         Write-Debug "Retrieving user recording transcript for UserId: $userId, RecordingId: $recordingId, IncludeSummary: $($includeSummary.IsPresent)"
         Try {
-            $response = $recording_manager.GetUserRecordingTranscript($userId, $recordingId, $includeSummary.IsPresent)
+            $recording_manager.GetUserRecordingTranscript($userId, $recordingId, $includeSummary.IsPresent)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
             Write-Error "Error retrieving user recording transcript: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-    } End {
-        Write-Debug "Successfully retrieved user recording transcript"
-        $response
-    
-    }
+    } 
 }

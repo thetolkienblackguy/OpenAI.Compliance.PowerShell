@@ -38,7 +38,7 @@ Function Get-OAIProject {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="All")]
         [switch]$All,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="Top")]
-        [ValidateRange(1, [int]::MaxValue)]
+        [ValidateRange(0, 100)]
         [int]$Top,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="ById")]
         [string]$ProjectId
@@ -58,13 +58,13 @@ Function Get-OAIProject {
         Try {
             Switch ($PSCmdlet.ParameterSetName) {
                 "All" {
-                    $response = $project_manager.GetProjects($null)
+                    $project_manager.GetProjects($null)
 
                 } "Top" {
-                    $response = $project_manager.GetProjects($top)
+                    $project_manager.GetProjects($top)
 
                 } "ById" {
-                    $response = $project_manager.GetProject($projectId)
+                    $project_manager.GetProject($projectId)
 
                 }
             }
@@ -74,10 +74,5 @@ Function Get-OAIProject {
             Write-Error "Error retrieving workspace projects: $($_.Exception.Message)" -ErrorAction Stop
         
         }
-
-    } End {
-        Write-Debug "Successfully retrieved workspace projects"
-        $response
-    
     }
 }

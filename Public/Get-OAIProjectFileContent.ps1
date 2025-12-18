@@ -38,7 +38,7 @@ Function Get-OAIProjectFileContent {
     } Process {
         Write-Debug "Retrieving project file content for FileId: $fileId"
         Try {
-            $response = $project_manager.GetProjectFileContent($fileId)
+            $project_manager.GetProjectFileContent($fileId)
             Write-Debug "Response retrieved successfully"
                 
         } Catch {
@@ -46,9 +46,5 @@ Function Get-OAIProjectFileContent {
         
         }
 
-    } End {
-        Write-Debug "Successfully retrieved project file content"
-        $response
-    
-    }
+    } 
 }

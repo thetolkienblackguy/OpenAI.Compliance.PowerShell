@@ -53,30 +53,18 @@ Function Remove-OAIUserMemory {
             ForEach ($context in $memoryContextId) {
                 ForEach ($memory in $memoryId) {
                     Write-Debug "Deleting user memory for UserId: $user, MemoryContextId: $context, MemoryId: $memory"
-                    Try {
-                        If ($PSCmdlet.ShouldProcess("Delete memory $memory for user $user in context $context", "Remove-OAIUserMemory", "Delete user memory")) {
-                            Try {
-                                $response = $memory_manager.DeleteMemoryEntry($user, $context, $memory)
-                                Write-Debug "Memory deleted successfully"
-                                $response
-                            
-                            } Catch {
-                                Write-Error "Error deleting user memory: $($_.Exception.Message)" -ErrorAction Stop
-                            
-                            }
-                        } Else {
-                            Write-Debug "Skipping user memory deletion due to ShouldProcess"
+                    If ($PSCmdlet.ShouldProcess("Delete memory $memory for user $user in context $context", "Remove-OAIUserMemory", "Delete user memory")) {
+                        Try {
+                            $memory_manager.DeleteMemoryEntry($user, $context, $memory)
+                            Write-Debug "Memory deleted successfully"
+                        
+                        } Catch {
+                            Write-Error "Error deleting user memory: $($_.Exception.Message)" -ErrorAction Stop
                         
                         }
-                    } Catch {
-                        Write-Error "Error deleting user memory: $($_.Exception.Message)" -ErrorAction Stop
-                    
-                    }
+                    }     
                 }
             }
         }
-    } End {
-        Write-Debug "Successfully processed user memory deletion"
-    
-    }
+    } 
 }
