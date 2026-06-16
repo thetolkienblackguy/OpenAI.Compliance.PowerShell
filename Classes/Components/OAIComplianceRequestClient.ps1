@@ -35,23 +35,28 @@ class OAIComplianceRequestClient {
             # Invoke-RestMethod
             Try {
                 $this.RequestDetails = $invoke_rest_params
-                $response = Invoke-RestMethod @invoke_rest_params
-                return $response
+                return Invoke-RestMethod @invoke_rest_params
 
             } Catch {
-                # Check if we should retry due to rate limiting
-                If ($this.HandleRateLimit()) {
-                    continue
-                
+                $status_code = $_.Exception.Response.StatusCode.value__
+
+                If ($status_code -eq 429 -and $attempt -lt $max_retries) {
+                    $retry_after = $_.Exception.Response.Headers["Retry-After"]
+                    $wait_seconds = If ($retry_after) {
+                        [int]$retry_after
+
+                    } Else {
+                        60
+
+                    }
+                    Write-Warning "Rate limit hit (429). Sleeping for $wait_seconds seconds"
+                    Start-Sleep -Seconds $wait_seconds
+
+                } Else {
+                    Throw
+
                 }
-                
-                # Log the error for non-retryable errors or final attempt
-                Write-Error "Failed to invoke request: $($_.Exception.Message)"
-                If ($attempt -eq $max_retries) {
-                    return $null
-                
-                }
-            
+
             }
         
         }
@@ -193,63 +198,6 @@ class OAIComplianceRequestClient {
         $params["after"] = $cursorValue
     }
 
-    # Rate limiting method - reactive handling
-    hidden [bool]HandleRateLimit() {
-        $last_error = $Error[0]
-        
-        If ($this.IsRateLimitError($last_error)) {
-            $retry_after = $this.GetRetryAfterValue($last_error)
-            $sleep_time = If ($retry_after) { [int]$retry_after } Else { 60 }
-            
-            Write-Warning "Rate limit hit (429). Sleeping for $sleep_time seconds"
-            Start-Sleep -Seconds $sleep_time
-            
-            return $true
-        
-        }
-        
-        return $false
-    }
-
-    # Check if error is a rate limit error
-    hidden [bool]IsRateLimitError([object]$errorRecord) {
-        $exception_type = $errorRecord.Exception.GetType().FullName
-        
-        # PowerShell Core 6+ uses HttpResponseException
-        If ($exception_type -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
-            $status_code = $errorRecord.Exception.Response.StatusCode
-            return ($status_code -eq 429)
-        
-        # Windows PowerShell 5.1 uses WebException
-        } ElseIf ($errorRecord.Exception -is [System.Net.WebException]) {
-            $response = $errorRecord.Exception.Response
-            If ($response -and $response.StatusCode) {
-                return ($response.StatusCode -eq 429)
-            
-            }
-        
-        }
-        return $false
-    }
-
-    # Get retry after value from error response
-    hidden [object]GetRetryAfterValue([object]$errorRecord) {
-        $exception_type = $errorRecord.Exception.GetType().FullName
-        
-        # PowerShell Core 6+ uses HttpResponseException
-        If ($exception_type -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
-            return $errorRecord.Exception.Response.Headers["Retry-After"]
-        
-        # Windows PowerShell 5.1 uses WebException
-        } ElseIf ($errorRecord.Exception -is [System.Net.WebException]) {
-            $response = $errorRecord.Exception.Response
-            If ($response -and $response.Headers) {
-                return $response.Headers["Retry-After"]
-            
-            }  
-        }
-        return $null
-    }
     #endregion
 
     #region URI Building
